@@ -66,6 +66,13 @@ module QportletsHelper
     return session[:qportlets_configure] 
   end
   
+  def show_portlet_control?(key)
+    return false unless logged_in?
+    return true unless @portlet_options.has_key?(key)
+    return @portlet_options[key]
+  end
+    
+  
 private
   def populate_portlets(user, page)
     # This is just a rough initial implementation, the algorithm for where to place
