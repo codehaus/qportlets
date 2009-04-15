@@ -1,5 +1,0 @@
-- portlet_content = render( :partial => "/#{portlet.page}/portlet_#{portlet.key}", :locals => { :user_portlet => user_portlet, :portlet => portlet } )
-- if not portlet_content.blank?
-  .panel
-    = render_portlet_options( portlet )
-    = portlet_content

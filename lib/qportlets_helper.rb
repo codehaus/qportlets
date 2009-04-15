@@ -14,26 +14,7 @@
 #  limitations under the License.
 ################################################################################
 
-module PortletHelper
-  #before_filter :find_user_portlet, :only => [ :portlet_close ]
-  def portlet_list(column = 1)
-  end
-  
-  def portlet_up
-  end
-  
-  def portlet_down
-  end
-  
-  def portlet_left
-  end
-  
-  def portlet_right
-  end
-  
-  def portlet_close
-    render :partial => '/portlet/close', :portlet => @portlet.id
-  end
+module QportletsHelper
   
   def render_portlets(page, col)
     if logged_in?
@@ -45,26 +26,44 @@ module PortletHelper
     populate_portlets(user, page)
     
     user_portlets = UserPortlet.find(:all, 
-                                :conditions => [ 'user_id = ? AND portlets.page = ? AND user_portlets.col = ?', user.id, page, col], 
+                                :conditions => [ 'user_id = ? AND portlets.enabled = TRUE AND ' +
+                                                 'user_portlets.enabled = true AND portlets.page = ? AND ' +
+                                                 'user_portlets.col = ?', user.id, page, col], 
                                 :order => 'user_portlets.row ASC',
                                 :include => [ :portlet ]
                                )
     
-    result = ''                           
+    result = ''
     for user_portlet in user_portlets
-      
       result << render_portlet(user_portlet)
     end
     return result
   end
   
-  def render_portlet_options( portlet )
-    render :partial => '/portlet/options'
+  def render_portlet_options( user_portlet )
+    portlet = user_portlet.portlet
+    render( :partial => '/qportlets/options',  :locals => { :user_portlet => user_portlet, :portlet => user_portlet.portlet } )
   end
   
   def render_portlet(user_portlet)
     portlet = user_portlet.portlet
-    return render( :partial => "/portlet/portlet", :locals => { :user_portlet => user_portlet, :portlet => user_portlet.portlet } )
+    return render( :partial => "/qportlets/qportlet", :locals => { :user_portlet => user_portlet, :portlet => user_portlet.portlet } )
+  end
+  
+  def render_portlet_configure
+    return render( :partial => "/qportlets/configure" )
+  end
+  
+  def portlet_configure_start
+    session[:qportlets_configure] = true
+  end
+  
+  def portlet_configure_stop
+    session[:qportlets_configure] = false
+  end
+  
+  def portlet_configure?
+    return session[:qportlets_configure] 
   end
   
 private
@@ -90,7 +89,9 @@ SELECT
    AND NOT EXISTS (SELECT * FROM USER_PORTLETS UP WHERE USER_ID = ? AND UP.PORTLET_ID = P.ID)
 EOF
     count = User.find_by_sql( [ sql, user.id, page, user.id ] )
-    logger.info{ "Added #{count} portlets to #{user.login}'s #{page} page" }
+    if defined?(logger)
+      logger.info{ "Added #{count} portlets to #{user.login}'s #{page} page" }
+    end
   end
   
   #def find_user_portlet
