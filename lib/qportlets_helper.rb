@@ -40,15 +40,55 @@ module QportletsHelper
     return result
   end
   
-  def render_portlet_options( user_portlet )
-    portlet = user_portlet.portlet
-    render( :partial => '/qportlets/options',  :locals => { :user_portlet => user_portlet, :portlet => user_portlet.portlet } )
+  def render_portlet_options( locals )
+    render( :partial => '/qportlets/options',  :locals => locals )
   end
   
-  def render_portlet(user_portlet)
-    portlet = user_portlet.portlet
-    return render( :partial => "/qportlets/qportlet", :locals => { :user_portlet => user_portlet, :portlet => user_portlet.portlet } )
+  def render_portlet(user_portlet, content_only = false)
+    @portlet = user_portlet.portlet
+    @user_portlet = user_portlet
+    run_portlet_controller_action()
+    
+    locals = {}
+    #Core values
+    locals[:locals] = locals #Lets us pass them to sub-views easily
+    locals[:user_portlet] = @user_portlet
+    locals[:portlet] = @portlet
+    #Defaults
+    locals[:portlet_title] = @portlet.title
+    locals[:portlet_options] = {}
+
+    if content_only
+      return render( :partial => "/portlets/#{@portlet.page}/#{@portlet.key}", :locals => locals )
+    else
+      return render( :partial => "/qportlets/qportlet", :locals => locals )
+    end
   end
+  
+  
+  
+protected
+  # This provides a standard hook action for the portlet handler to use
+  # if it needs to do a refresh - it can ask for /home/handle_portlet - and feed in the various ids
+  def internal_handle_portlet
+    find_portlet()
+    render_portlet(@user_portlet, true)
+  end
+  
+  def run_portlet_controller_action
+    portlet_class_name = "::#{@portlet.page.capitalize}Portlet"
+    portlet_class = eval(portlet_class_name)
+    
+    @portlet_controller = portlet_class.new
+    @portlet_controller.current_user = current_user
+    @portlet_controller.send(@portlet.key)
+  end
+  
+  def setup_portlet_defaults
+  end
+  
+  
+public
   
   def render_portlet_configure
     return render( :partial => "/qportlets/configure" )
@@ -66,10 +106,10 @@ module QportletsHelper
     return session[:qportlets_configure] 
   end
   
-  def show_portlet_control?(key)
+  def show_portlet_control?(key, portlet_options)
     return false unless logged_in?
-    return true unless @portlet_options.has_key?(key)
-    return @portlet_options[key]
+    return true unless portlet_options.has_key?(key)
+    return portlet_options[key]
   end
     
   
@@ -101,8 +141,10 @@ EOF
     end
   end
   
-  #def find_user_portlet
-  #  @user_portlet = UserPortlet.find_by_user_id_and_portlet_id( current_user.id, params[:portlet_id])
-  #end
+protected
+  def find_portlet
+    @portlet = ::Portlet.find_by_id(params[:id])
+    @user_portlet = UserPortlet.find_by_user_id_and_portlet_id(current_user.id, @portlet.id)
+  end
 
 end
