@@ -81,6 +81,8 @@ protected
     
     @portlet_controller = portlet_class.new
     @portlet_controller.current_user = current_user
+    @portlet_controller.request = request
+    @portlet_controller.response = response
     @portlet_controller.send(@portlet.key)
   end
   
