@@ -145,8 +145,11 @@ EOF
   
 protected
   def find_portlet
-    @portlet = ::Portlet.find_by_id(params[:id])
+    #puts Portlet.find(:all).inspect
+    @portlet = ::Portlet.find_by_id(params[:portlet_id])
+    raise Exception.new("Unable to find portlet #{params[:portlet_id]}") unless @portlet
     @user_portlet = UserPortlet.find_by_user_id_and_portlet_id(current_user.id, @portlet.id)
+    raise Exception.new("Unable to find user_portlet for #{current_user.login}") unless @user_portlet
   end
 
 end
